@@ -1,9 +1,9 @@
-// App.tsx ou App.jsx
+import { Transactions } from "./pages/transactions";
 
 export function App() {
   return (
-    <div className="App">
-      <h1 className="text-4xl font-bold text-center mt-10">contAi</h1>
+    <div className="min-h-screen bg-gray-50">
+      <Transactions />
     </div>
   );
 }
