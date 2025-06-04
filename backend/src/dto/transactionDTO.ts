@@ -1,8 +1,11 @@
-import { IsDateString, IsEnum, IsNotEmpty, IsNumber } from "class-validator"
+import { IsEnum, IsNotEmpty, IsNumber, Matches } from "class-validator"
 import { TransactionType } from "../entities/transaction"
 
 export class CreateTransactionDTO {
-  @IsDateString({}, { message: "Date must be a valid ISO 8601 string." })
+  @Matches(
+    /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/,
+    { message: "Date must be in the format DD/MM/YYYY." }
+  )
   date!: string
 
   @IsNotEmpty({ message: "Description should not be empty." })
