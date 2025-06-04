@@ -1,6 +1,7 @@
 import { OverviewMonthly } from "@/components/overviewMonthly";
 import { Header } from "../components/header";
 import { TransactionForm } from "@/components/transactionForm";
+import { TransactionHistory } from "@/components/transactionHistory";
 
 export function Transactions() {
   return (
@@ -13,9 +14,9 @@ export function Transactions() {
           <div className="lg:col-span-1">
             <TransactionForm />
           </div>
-          {/* <div className="lg:col-span-2">
+          <div className="lg:col-span-2">
             <TransactionHistory />
-          </div> */}
+          </div>
         </div>
       
     </div>
