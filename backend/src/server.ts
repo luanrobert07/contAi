@@ -1,16 +1,17 @@
-import express from "express"
-import { myDataSource } from "./app-data-source"
+import { app } from "./app"
+import { myDataSource } from "./database/database"
 
-myDataSource
-    .initialize()
-    .then(() => {
-        console.log("Data Source has been initialized!")
+const PORT = 3000
+
+myDataSource.initialize()
+  .then(() => {
+    console.log("Data Source initialized")
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`)
     })
-    .catch((err) => {
-        console.error("Error during Data Source initialization:", err)
-    })
-
-const app = express()
-app.use(express.json())
-
-app.listen(3000)
+  })
+  .catch((error) => {
+    console.error("Error during Data Source initialization", error)
+    process.exit(1) // sai do processo pois o banco não conectou
+  })
