@@ -14,7 +14,7 @@ export class Transaction {
   @Column({ type: "date" })
   @IsNotEmpty({ message: "Transaction data is required" })
   @IsDateString({}, { message: "Date must be in valid format" })
-  date!: string
+  date!: Date
 
   @Column({ type: "varchar", length: 500 })
   @IsNotEmpty({ message: "Description is required" })

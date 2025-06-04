@@ -1,9 +1,10 @@
-import { Repository } from "typeorm"
+import { Between, Repository } from "typeorm"
 import { validate } from "class-validator"
 import { Transaction } from "../entities/transaction"
 import { TransactionType } from "../entities/transaction"
 import { myDataSource } from "../database/database"
 import { CreateTransactionDTO } from "../dto/transactionDTO"
+import dayjs from "dayjs"
 
 export class TransactionService {
   private transactionRepository: Repository<Transaction>
@@ -55,21 +56,26 @@ export class TransactionService {
       month: number
     }
   }> {
-    const transactions = await this.transactionRepository
-      .createQueryBuilder("transaction")
-      .where("EXTRACT(YEAR FROM transaction.date) = :year", { year })
-      .andWhere("EXTRACT(MONTH FROM transaction.date) = :month", { month })
-      .orderBy("transaction.date", "ASC")
-      .getMany()
+  const startDate = dayjs(`${year}-${month}-01`).startOf("month").toDate()
+  const endDate = dayjs(startDate).endOf("month").toDate()
 
-    const totals = this.calculateTotals(transactions)
+  const transactions = await this.transactionRepository.find({
+    where: {
+      date: Between(startDate, endDate),
+    },
+    order: {
+      date: "ASC",
+    },
+  })
 
-    return {
-      transactions,
-      totals,
-      period: { year, month },
-    }
+  const totals = this.calculateTotals(transactions)
+
+  return {
+    transactions,
+    totals,
+    period: { year, month },
   }
+}
 
   private calculateTotals(transactions: Transaction[]) {
     const totalCredits = transactions
