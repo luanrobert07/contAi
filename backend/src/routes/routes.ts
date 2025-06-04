@@ -14,7 +14,4 @@ router.get("/", asyncHandler((req, res) => transactionController.listAll(req, re
 
 router.get("/:year/:month", asyncHandler((req, res) => transactionController.listByMonth(req, res)))
 
-// Rota do resumo mensal - descomente no controller para ativar essa rota
-// router.get("/summary", asyncHandler((req, res) => transactionController.monthlySummary(req, res)))
-
 export { router as transactionRoutes }

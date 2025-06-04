@@ -80,22 +80,4 @@ export class TransactionController {
       })
     }
   }
-
-  // Uncomment if you want to use monthly summary
-  /*
-  async monthlySummary(req: Request, res: Response) {
-    try {
-      const summary = await this.transactionService.getMonthlySummary()
-      res.json({
-        message: "Monthly summary retrieved successfully",
-        data: summary,
-      })
-    } catch (error) {
-      res.status(500).json({
-        message: "Internal server error",
-        error: error instanceof Error ? error.message : "Unknown error",
-      })
-    }
-  }
-  */
 }

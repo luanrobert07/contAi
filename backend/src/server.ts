@@ -13,5 +13,5 @@ myDataSource.initialize()
   })
   .catch((error) => {
     console.error("Error during Data Source initialization", error)
-    process.exit(1) // sai do processo pois o banco não conectou
+    process.exit(1)
   })
