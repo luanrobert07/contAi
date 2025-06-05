@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useContext, useState } from "react"
 import DatePicker from "react-datepicker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import "react-datepicker/dist/react-datepicker.css"
+import { TransactionContext } from "@/contexts/transactionsCOntext"
 
 export function TransactionForm() {
+  const { createTransaction } = useContext(TransactionContext)
+  
   const [date, setDate] = useState<Date | null>(null)
   const [description, setDescription] = useState("")
   const [amount, setAmount] = useState("")
@@ -18,13 +21,6 @@ export function TransactionForm() {
     amount: false,
     type: false,
   })
-
-  function formatDateToDDMMYYYY(date: Date): string {
-    const day = String(date.getDate()).padStart(2, "0")
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const year = date.getFullYear()
-    return `${day}/${month}/${year}`
-  }
 
   const handleSubmit = async () => {
     const newErrors = {
@@ -41,29 +37,15 @@ export function TransactionForm() {
 
     setErrors(newErrors)
 
-    const hasError = Object.values(newErrors).some(Boolean)
-    if (hasError) return
+    if (Object.values(newErrors).some(Boolean)) return
 
     try {
-      const response = await fetch("https://contai.onrender.com/transaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: date ? formatDateToDDMMYYYY(date) : null,
-          description,
-          value: parsedValue,
-          type,
-        }),
+      await createTransaction({
+        date,
+        description,
+        value: parsedValue.toString(),
+        type: type as "Credit" | "Debit",
       })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        console.error("Error response from backend:", data)
-        return
-      }
-
-      console.log("Success response from backend:", data)
 
       setDate(null)
       setDescription("")
@@ -72,7 +54,7 @@ export function TransactionForm() {
       setErrors({ date: false, description: false, amount: false, type: false })
 
     } catch (error) {
-      console.error("Network error:", error)
+      console.error("Erro ao criar transação:", error)
     }
   }
 
@@ -80,73 +62,80 @@ export function TransactionForm() {
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm md:ml-20 mt-3">
       <div className="px-6 py-4 border-b border-gray-200">
         <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-          <Plus size={20} color="blue" className="title-icon" />
-          Register Transaction
+          <Plus size={20} color="blue" />
+          Registrar Transação
         </h2>
       </div>
+      
       <div className="p-6 space-y-4">
-
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-            Transaction Date
+            Data da Transação
           </label>
           <div className="relative flex items-center">
             <DatePicker
               selected={date}
-              onChange={(date) => setDate(date)}
+              onChange={setDate}
               dateFormat="dd/MM/yyyy"
-              placeholderText="dd/mm/yyyy"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-blue-500 pr-10
-                ${errors.date ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-blue-500"}
+              placeholderText="dd/mm/aaaa"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 pr-10
+                ${errors.date 
+                  ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"}
               `}
             />
-            <Calendar
-              size={16}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-              aria-hidden="true"
-            />
           </div>
-          {errors.date && <p className="text-red-500 text-sm mt-1">Please select a date.</p>}
+          {errors.date && <p className="text-red-500 text-sm mt-1">Selecione uma data.</p>}
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-            Description
+            Descrição
           </label>
           <textarea
-            placeholder="Enter transaction description"
+            placeholder="Descrição da transação"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-blue-500 min-h-[80px] resize-none
-              ${errors.description ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-blue-500"}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 min-h-[80px] resize-none
+              ${errors.description 
+                ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"}
             `}
           />
-          {errors.description && <p className="text-red-500 text-sm mt-1">Description cannot be empty.</p>}
+          {errors.description && <p className="text-red-500 text-sm mt-1">Descrição é obrigatória.</p>}
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-            Amount
+            Valor
           </label>
           <input
-            type="text"
+            type="number"
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-blue-500
-              ${errors.amount ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-blue-500"}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2
+              ${errors.amount 
+                ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"}
             `}
           />
-          {errors.amount && <p className="text-red-500 text-sm mt-1">Amount cannot be empty or invalid.</p>}
+          {errors.amount && (
+            <p className="text-red-500 text-sm mt-1">
+              {amount.trim() === "" 
+                ? "Valor é obrigatório" 
+                : "Valor deve ser maior que zero"}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-            Transaction Type
+            Tipo de Transação
           </label>
           <Select value={type} onValueChange={setType}>
             <SelectTrigger
@@ -154,21 +143,22 @@ export function TransactionForm() {
                 ${errors.type ? "border-red-500" : "border-gray-300"}
               `}
             >
-              <SelectValue placeholder="Select type" />
+              <SelectValue placeholder="Selecione o tipo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Credit">Credit</SelectItem>
-              <SelectItem value="Debit">Debit</SelectItem>
+              <SelectItem value="Credit">Crédito</SelectItem>
+              <SelectItem value="Debit">Débito</SelectItem>
             </SelectContent>
           </Select>
-          {errors.type && <p className="text-red-500 text-sm mt-1">Please select a transaction type.</p>}
+          {errors.type && <p className="text-red-500 text-sm mt-1">Selecione um tipo.</p>}
         </div>
 
         <button
           onClick={handleSubmit}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center justify-center"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center justify-center transition-colors"
         >
-          <Plus size={20} color="white" className="title-icon" />
+          <Plus size={20} className="mr-2" />
+          Adicionar Transação
         </button>
       </div>
     </div>

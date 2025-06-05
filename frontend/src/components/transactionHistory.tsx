@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useContext, useState, useMemo } from "react"
 import { TransactionTable } from "./transactionTable"
 import { ChevronUp, Filter } from 'lucide-react'
+import { TransactionContext } from "@/contexts/transactionsCOntext" 
 
 interface Transaction {
   id: string
@@ -25,11 +26,16 @@ const months = [
   { value: "10", label: "October" },
   { value: "11", label: "November" },
   { value: "12", label: "December" },
-]
+] as const
 
 export function TransactionHistory() {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [selectedFilter, setSelectedFilter] = useState("all")
+  const context = useContext(TransactionContext)
+  if (!context) {
+    throw new Error("TransactionHistory must be used within a TransactionProvider")
+  }
+  const { transactions } = context
+
+  const [selectedFilter, setSelectedFilter] = useState<string>("all")
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({})
 
   const toggleExpanded = (monthKey: string) => {
@@ -39,95 +45,87 @@ export function TransactionHistory() {
     }))
   }
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const res = await fetch("https://contai.onrender.com/transaction")
-        const json = await res.json()
-
-        const formatted = json.data.map((t: { id: number; date: string; description: string; value: string; type: "Credit" | "Debit" }): Transaction => {
-          const [year, month, day  ] = t.date.split("-")
-          return {
-            id: String(t.id),
-            date: `${day}/${month}/${year}`,
-            description: t.description,
-            value: parseFloat(t.value),
-            type: t.type,
-          }
-        })
-
-        setTransactions(formatted)
-
-      } catch (err) {
-        console.error("Erro ao carregar transações:", err)
-      }
-    }
-
-    fetchTransactions()
-  }, [])
-
-  const years = Array.from(
-    new Set(transactions.map((t) => t.date.split("/")[2]))
-  ).sort((a, b) => parseInt(b) - parseInt(a))
-
-  const getAllMonthKeys = () => {
-    const allKeys: string[] = []
+  const years = useMemo(() => {
+    const uniqueYears = new Set<string>()
     
+    transactions.forEach(transaction => {
+      if (transaction.date) {
+        const parts = transaction.date.split("/")
+        if (parts.length >= 3 && parts[2]) {
+          uniqueYears.add(parts[2])
+        }
+      }
+    })
+    
+    return Array.from(uniqueYears).sort((a, b) => parseInt(b) - parseInt(a))
+  }, [transactions])
+
+  const allMonthKeys = useMemo(() => {
+    const keys: string[] = []
     const yearsToShow = years.length > 0 ? years : [new Date().getFullYear().toString()]
     
     yearsToShow.forEach(year => {
       months.forEach(month => {
-        allKeys.push(`${month.label} ${year}`)
+        keys.push(`${month.label} ${year}`)
       })
     })
     
-    return allKeys.sort((a, b) => {
-      const [monthA, yearA] = a.split(" ")
-      const [monthB, yearB] = b.split(" ")
-    
-      if (yearA !== yearB) {
-        return parseInt(yearA) - parseInt(yearB)
+    return keys.sort((a, b) => {
+      const [aMonth, aYear] = a.split(" ")
+      const [bMonth, bYear] = b.split(" ")
+      
+      const yearDiff = parseInt(bYear) - parseInt(aYear)
+      if (yearDiff !== 0) return yearDiff
+      
+      const aMonthIndex = months.findIndex(m => m.label === aMonth)
+      const bMonthIndex = months.findIndex(m => m.label === bMonth)
+      return aMonthIndex - bMonthIndex
+    })
+  }, [years])
+
+  const groupedTransactions = useMemo(() => {
+    return transactions.reduce((groups, transaction) => {
+      if (!transaction.date || typeof transaction.date !== "string") {
+        console.warn("Transação com data inválida:", transaction)
+        return groups
       }
+      
+      const dateParts = transaction.date.split("/")
+      if (dateParts.length < 3 || !dateParts[1] || !dateParts[2]) {
+        console.warn("Formato de data inválido:", transaction.date)
+        return groups
+      }
+      
+      const monthValue = dateParts[1]
+      const year = dateParts[2]
+      const month = months.find(m => m.value === monthValue)
+      
+      if (!month) {
+        console.warn("Mês inválido na transação:", monthValue)
+        return groups
+      }
+      
+      const key = `${month.label} ${year}`
+      if (!groups[key]) groups[key] = []
+      groups[key].push(transaction)
+      
+      return groups
+    }, {} as Record<string, Transaction[]>)
+  }, [transactions])
+
+  const filteredMonthKeys = useMemo(() => {
+    if (selectedFilter === "all") return allMonthKeys
     
-      const monthIndexA = months.findIndex(m => m.label === monthA)
-      const monthIndexB = months.findIndex(m => m.label === monthB)
+    const selectedMonth = months.find(m => m.value === selectedFilter)
+    if (!selectedMonth) return allMonthKeys
     
-      return monthIndexA - monthIndexB 
-    })    
-  }
+    return allMonthKeys.filter(key => key.startsWith(selectedMonth.label))
+  }, [selectedFilter, allMonthKeys])
 
-  const groupedTransactions = transactions.reduce((groups, transaction) => {
-    const [, month, year] = transaction.date.split("/")
-    const monthLabel = months.find(m => m.value === month)?.label || ""
-    const key = `${monthLabel} ${year}`
-
-    if (!groups[key]) {
-      groups[key] = []
-    }
-    groups[key].push(transaction)
-    
-    return groups
-  }, {} as Record<string, Transaction[]>)
-
-  const allMonthKeys = getAllMonthKeys()
-
-  const getFilteredMonthKeys = () => {
-    if (selectedFilter === "all") {
-      return allMonthKeys
-    }
-    
-    const selectedMonthLabel = months.find(m => m.value === selectedFilter)?.label
-    if (!selectedMonthLabel) return allMonthKeys
-    
-    return allMonthKeys.filter(key => key.startsWith(selectedMonthLabel))
-  }
-
-  const filteredMonthKeys = getFilteredMonthKeys()
-
-  const filterOptions = [
+  const filterOptions = useMemo(() => [
     { value: "all", label: "All" },
     ...months.map(month => ({ value: month.value, label: month.label }))
-  ]
+  ], [])
 
   return (
     <div className="mt-3 mr-10 mb-3 bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -148,6 +146,7 @@ export function TransactionHistory() {
                 className="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white"
                 value={selectedFilter}
                 onChange={(e) => setSelectedFilter(e.target.value)}
+                aria-label="Filter transactions by month"
               >
                 {filterOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -162,48 +161,52 @@ export function TransactionHistory() {
 
       <div className="p-6">
         <div className="space-y-4">
-          {filteredMonthKeys.map((monthKey) => {
-            const monthTransactions = groupedTransactions[monthKey] || []
-            const isExpanded = expandedMonths[monthKey] ?? false
+          {filteredMonthKeys.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No transactions available</p>
+            </div>
+          ) : (
+            filteredMonthKeys.map((monthKey) => {
+              const monthTransactions = groupedTransactions[monthKey] || []
+              const isExpanded = expandedMonths[monthKey] ?? false
 
-            return (
-              <div key={monthKey}>
-                <button
-                  onClick={() => toggleExpanded(monthKey)}
-                  className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded"
-                >
-                  <span className="font-medium text-gray-900">
-                    {monthKey} {monthTransactions.length === 0 && (
-                      <span className="text-sm text-gray-400 font-normal">
-                        (No transactions)
-                      </span>
-                    )}
-                  </span>
-                  <ChevronUp
-                    size={20}
-                    className={`text-gray-400 transition-transform duration-200 ${
-                      isExpanded ? "rotate-0" : "rotate-180"
-                    }`}
-                  />
-                </button>
+              return (
+                <div key={monthKey}>
+                  <button
+                    onClick={() => toggleExpanded(monthKey)}
+                    className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded"
+                    aria-expanded={isExpanded}
+                  >
+                    <span className="font-medium text-gray-900">
+                      {monthKey}
+                      {monthTransactions.length === 0 && (
+                        <span className="text-sm text-gray-400 font-normal ml-2">
+                          (No transactions)
+                        </span>
+                      )}
+                    </span>
+                    <ChevronUp
+                      size={20}
+                      className={`text-gray-400 transition-transform ${isExpanded ? "rotate-0" : "rotate-180"}`}
+                      aria-hidden="true"
+                    />
+                  </button>
 
-                {isExpanded && (
-                  <div className="mt-2">
-                    {monthTransactions.length > 0 ? (
-                      <TransactionTable
-                        transactions={monthTransactions}
-                        month={monthKey}
-                      />
-                    ) : (
-                      <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-                        <p>No transactions for this month.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                  {isExpanded && (
+                    <div className="mt-2">
+                      {monthTransactions.length > 0 ? (
+                        <TransactionTable transactions={monthTransactions} month={monthKey} />
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                          <p>No transactions for this period</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
         </div>
       </div>
     </div>
