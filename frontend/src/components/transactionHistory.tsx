@@ -42,7 +42,7 @@ export function TransactionHistory() {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const res = await fetch("http://localhost:3000/transaction")
+        const res = await fetch("https://contai.onrender.com/transaction")
         const json = await res.json()
 
         const formatted = json.data.map((t: { id: number; date: string; description: string; value: string; type: "Credit" | "Debit" }): Transaction => {

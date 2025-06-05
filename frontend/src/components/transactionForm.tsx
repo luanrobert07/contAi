@@ -45,7 +45,7 @@ export function TransactionForm() {
     if (hasError) return
 
     try {
-      const response = await fetch("http://localhost:3000/transaction", {
+      const response = await fetch("https://contai.onrender.com/transaction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
