@@ -1,58 +1,46 @@
 "use client"
 
-import { useContext, useState } from "react"
+import { useContext } from "react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { TransactionContext } from "@/contexts/transactionContext"
 import DatePicker from "react-datepicker"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Plus } from "lucide-react"
 import "react-datepicker/dist/react-datepicker.css"
-import { TransactionContext } from "@/contexts/transactionContext"
+import { z } from "zod"
+import { transactionFormSchema } from "@/schemas/transactionFormSchema"
+
+type TransactionFormInputs = z.infer<typeof transactionFormSchema>
 
 export function TransactionForm() {
   const { createTransaction } = useContext(TransactionContext)
-  
-  const [date, setDate] = useState<Date | null>(null)
-  const [description, setDescription] = useState("")
-  const [amount, setAmount] = useState("")
-  const [type, setType] = useState("")
 
-  const [errors, setErrors] = useState({
-    date: false,
-    description: false,
-    amount: false,
-    type: false,
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<TransactionFormInputs>({
+    resolver: zodResolver(transactionFormSchema),
   })
 
-  const handleSubmit = async () => {
-    const newErrors = {
-      date: !date,
-      description: description.trim() === "",
-      amount: amount.trim() === "",
-      type: type === "",
-    }
-
-    const parsedValue = parseFloat(amount)
-    if (isNaN(parsedValue) || parsedValue <= 0) {
-      newErrors.amount = true
-    }
-
-    setErrors(newErrors)
-
-    if (Object.values(newErrors).some(Boolean)) return
-
+  const onSubmit = async (data: TransactionFormInputs) => {
     try {
       await createTransaction({
-        date,
-        description,
-        value: parsedValue.toString(),
-        type: type as "Credit" | "Debit",
+        date: data.date,
+        description: data.description,
+        value: data.amount.toString(),
+        type: data.type,
       })
-
-      setDate(null)
-      setDescription("")
-      setAmount("")
-      setType("")
-      setErrors({ date: false, description: false, amount: false, type: false })
-
+      reset()
     } catch (error) {
       console.error("Erro ao criar transação:", error)
     }
@@ -66,101 +54,106 @@ export function TransactionForm() {
           Registrar Transação
         </h2>
       </div>
-      
-      <div className="p-6 space-y-4">
+
+      <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+        {/* Data */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
             Data da Transação
           </label>
-          <div className="relative flex items-center">
-            <DatePicker
-              selected={date}
-              onChange={setDate}
-              dateFormat="dd/MM/yyyy"
-              placeholderText="dd/mm/aaaa"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 pr-10
-                ${errors.date 
-                  ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
-                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"}
-              `}
-            />
-          </div>
-          {errors.date && <p className="text-red-500 text-sm mt-1">Selecione uma data.</p>}
+          <Controller
+            name="date"
+            control={control}
+            render={({ field }) => (
+              <DatePicker
+                placeholderText="dd/mm/aaaa"
+                selected={field.value}
+                onChange={field.onChange}
+                dateFormat="dd/MM/yyyy"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2
+                  ${errors.date ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`}
+              />
+            )}
+          />
+          {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
         </div>
 
+        {/* Descrição */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
             Descrição
           </label>
           <textarea
+            {...register("description")}
             placeholder="Descrição da transação"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 min-h-[80px] resize-none
-              ${errors.description 
-                ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
-                : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"}
-            `}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 resize-none min-h-[80px]
+              ${errors.description ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`}
           />
-          {errors.description && <p className="text-red-500 text-sm mt-1">Descrição é obrigatória.</p>}
+          {errors.description && (
+            <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
+          )}
         </div>
 
+        {/* Valor */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
             Valor
           </label>
           <input
+            {...register("amount", { valueAsNumber: true })}
             type="number"
             placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            min={0.01}
+            step={0.01}
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2
-              ${errors.amount 
-                ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
-                : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"}
-            `}
+              ${errors.amount ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`}
           />
-          {errors.amount && (
-            <p className="text-red-500 text-sm mt-1">
-              {amount.trim() === "" 
-                ? "Valor é obrigatório" 
-                : "Valor deve ser maior que zero"}
-            </p>
-          )}
+          {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>}
         </div>
 
+        {/* Tipo */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
             Tipo de Transação
           </label>
-          <Select value={type} onValueChange={setType}>
-            <SelectTrigger
-              className={`w-full border rounded-md
-                ${errors.type ? "border-red-500" : "border-gray-300"}
-              `}
-            >
-              <SelectValue placeholder="Selecione o tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Credit">Crédito</SelectItem>
-              <SelectItem value="Debit">Débito</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.type && <p className="text-red-500 text-sm mt-1">Selecione um tipo.</p>}
+          <Controller
+            name="type"
+            control={control}
+            render={({ field }) => (
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || ""}
+              >
+                <SelectTrigger
+                  className={`w-full border rounded-md
+                    ${errors.type ? "border-red-500" : "border-gray-300"}`}
+                >
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Credit">Crédito</SelectItem>
+                  <SelectItem value="Debit">Débito</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
         </div>
 
         <button
-          onClick={handleSubmit}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center justify-center transition-colors"
+          type="submit"
+          disabled={isSubmitting}
+          className={`w-full py-2 px-4 rounded-md flex items-center justify-center transition-colors
+            ${isSubmitting ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
         >
           <Plus size={20} className="mr-2" />
-          Adicionar Transação
+          {isSubmitting ? "Adicionando..." : "Adicionar Transação"}
         </button>
-      </div>
+      </form>
     </div>
   )
 }

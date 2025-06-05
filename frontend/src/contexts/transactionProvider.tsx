@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/axios";
 import { TransactionContext } from "./transactionContext";
+import { formatDateToDDMMYYYY } from "@/utils/date";  // <-- aqui a importação
 
 interface Transaction {
   id: string;
@@ -15,13 +16,6 @@ interface CreateTransactionData {
   description: string;
   value: string;
   type: "Credit" | "Debit";
-}
-
-function formatDateToDDMMYYYY(date: Date): string {
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
 }
 
 export function TransactionProvider({ children }: { children: React.ReactNode }) {

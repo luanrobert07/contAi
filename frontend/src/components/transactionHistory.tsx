@@ -1,32 +1,34 @@
 "use client"
 
-import { useContext, useState, useMemo } from "react"
+import { useContext, useState, useMemo, useCallback } from "react"
 import { TransactionTable } from "./transactionTable"
 import { ChevronUp, Filter } from 'lucide-react'
 import { TransactionContext } from "@/contexts/transactionContext"
 
 interface Transaction {
   id: string
-  date: string 
+  date: string
   description: string
   value: number
   type: "Credit" | "Debit"
 }
 
 const months = [
-  { value: "01", label: "January" },
-  { value: "02", label: "February" },
-  { value: "03", label: "March" },
-  { value: "04", label: "April" },
-  { value: "05", label: "May" },
-  { value: "06", label: "June" },
-  { value: "07", label: "July" },
-  { value: "08", label: "August" },
-  { value: "09", label: "September" },
-  { value: "10", label: "October" },
-  { value: "11", label: "November" },
-  { value: "12", label: "December" },
+  { value: "01",  labelPt: "Janeiro" },
+  { value: "02",  labelPt: "Fevereiro" },
+  { value: "03",  labelPt: "Março" },
+  { value: "04",  labelPt: "Abril" },
+  { value: "05",  labelPt: "Maio" },
+  { value: "06",  labelPt: "Junho" },
+  { value: "07",  labelPt: "Julho" },
+  { value: "08",  labelPt: "Agosto" },
+  { value: "09",  labelPt: "Setembro" },
+  { value: "10",  labelPt: "Outubro" },
+  { value: "11",  labelPt: "Novembro" },
+  { value: "12",  labelPt: "Dezembro" },
 ] as const
+
+const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/
 
 export function TransactionHistory() {
   const context = useContext(TransactionContext)
@@ -35,123 +37,113 @@ export function TransactionHistory() {
   }
   const { transactions } = context
 
-  const [selectedFilter, setSelectedFilter] = useState<string>("all")
+  const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>("all")
+  const [selectedYearFilter, setSelectedYearFilter] = useState<string>("all")
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({})
 
-  const toggleExpanded = (monthKey: string) => {
+  const toggleExpanded = useCallback((monthKey: string) => {
     setExpandedMonths(prev => ({
       ...prev,
       [monthKey]: !prev[monthKey]
     }))
-  }
+  }, [])
 
   const years = useMemo(() => {
     const uniqueYears = new Set<string>()
-    
-    transactions.forEach(transaction => {
-      if (transaction.date) {
-        const parts = transaction.date.split("/")
-        if (parts.length >= 3 && parts[2]) {
-          uniqueYears.add(parts[2])
-        }
+    transactions.forEach(({ date }) => {
+      if (dateRegex.test(date)) {
+        const year = date.split("/")[2]
+        uniqueYears.add(year)
       }
     })
-    
     return Array.from(uniqueYears).sort((a, b) => parseInt(b) - parseInt(a))
   }, [transactions])
 
   const allMonthKeys = useMemo(() => {
+    const yearsToShow = selectedYearFilter !== "all" ? [selectedYearFilter] : (years.length > 0 ? years : [new Date().getFullYear().toString()])
     const keys: string[] = []
-    const yearsToShow = years.length > 0 ? years : [new Date().getFullYear().toString()]
-    
     yearsToShow.forEach(year => {
       months.forEach(month => {
-        keys.push(`${month.label} ${year}`)
+        keys.push(`${month.value}-${year}`)
       })
     })
-    
+
     return keys.sort((a, b) => {
-      const [aMonth, aYear] = a.split(" ")
-      const [bMonth, bYear] = b.split(" ")
-      
-      const yearDiff = parseInt(bYear) - parseInt(aYear)
-      if (yearDiff !== 0) return yearDiff
-      
-      const aMonthIndex = months.findIndex(m => m.label === aMonth)
-      const bMonthIndex = months.findIndex(m => m.label === bMonth)
-      return aMonthIndex - bMonthIndex
+      const [aMonth, aYear] = a.split("-").map(Number)
+      const [bMonth, bYear] = b.split("-").map(Number)
+      if (bYear !== aYear) return bYear - aYear
+      return bMonth - aMonth
     })
-  }, [years])
+  }, [years, selectedYearFilter])
 
   const groupedTransactions = useMemo(() => {
     return transactions.reduce((groups, transaction) => {
-      if (!transaction.date || typeof transaction.date !== "string") {
+      if (!transaction.date || !dateRegex.test(transaction.date)) {
         console.warn("Transação com data inválida:", transaction)
         return groups
       }
-      
-      const dateParts = transaction.date.split("/")
-      if (dateParts.length < 3 || !dateParts[1] || !dateParts[2]) {
-        console.warn("Formato de data inválido:", transaction.date)
-        return groups
-      }
-      
-      const monthValue = dateParts[1]
-      const year = dateParts[2]
-      const month = months.find(m => m.value === monthValue)
-      
-      if (!month) {
-        console.warn("Mês inválido na transação:", monthValue)
-        return groups
-      }
-      
-      const key = `${month.label} ${year}`
+      const [, month, year] = transaction.date.split("/")
+      const key = `${month}-${year}`
       if (!groups[key]) groups[key] = []
       groups[key].push(transaction)
-      
       return groups
     }, {} as Record<string, Transaction[]>)
   }, [transactions])
 
   const filteredMonthKeys = useMemo(() => {
-    if (selectedFilter === "all") return allMonthKeys
-    
-    const selectedMonth = months.find(m => m.value === selectedFilter)
-    if (!selectedMonth) return allMonthKeys
-    
-    return allMonthKeys.filter(key => key.startsWith(selectedMonth.label))
-  }, [selectedFilter, allMonthKeys])
+    if (selectedMonthFilter === "all") return allMonthKeys
+    return allMonthKeys.filter(key => key.startsWith(selectedMonthFilter))
+  }, [selectedMonthFilter, allMonthKeys])
 
-  const filterOptions = useMemo(() => [
-    { value: "all", label: "All" },
-    ...months.map(month => ({ value: month.value, label: month.label }))
+  const monthFilterOptions = useMemo(() => [
+    { value: "all", label: "Todos os meses" },
+    ...months.map(month => ({ value: month.value, label: month.labelPt }))
   ], [])
 
+  const yearFilterOptions = useMemo(() => [
+    { value: "all", label: "Todos os anos" },
+    ...years.map(year => ({ value: year, label: year }))
+  ], [years])
+
   return (
-    <div className="mt-3 mr-10 mb-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+    <div className="mt-3 md:mr-10 mb-3 bg-white border border-gray-200 rounded-lg shadow-sm">
       <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
             <div className="w-5 h-5 bg-blue-600 rounded flex items-center justify-center">
               <div className="w-2 h-2 bg-white rounded-full"></div>
             </div>
-            Transaction History
+            Histórico de Transações
           </h2>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-600 flex items-center gap-2">
               <Filter size={16} className="text-gray-400" />
-              <span>Filter by:</span>
+              <label htmlFor="month-filter" className="sr-only">Filtrar por mês</label>
               <select
+                id="month-filter"
                 className="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white"
-                value={selectedFilter}
-                onChange={(e) => setSelectedFilter(e.target.value)}
-                aria-label="Filter transactions by month"
+                value={selectedMonthFilter}
+                onChange={(e) => setSelectedMonthFilter(e.target.value)}
+                aria-label="Filtrar transações por mês"
               >
-                {filterOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+                {monthFilterOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-600 flex items-center gap-2">
+              <label htmlFor="year-filter" className="sr-only">Filtrar por ano</label>
+              <select
+                id="year-filter"
+                className="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white"
+                value={selectedYearFilter}
+                onChange={(e) => setSelectedYearFilter(e.target.value)}
+                aria-label="Filtrar transações por ano"
+              >
+                {yearFilterOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
             </div>
@@ -163,44 +155,47 @@ export function TransactionHistory() {
         <div className="space-y-4">
           {filteredMonthKeys.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>No transactions available</p>
+              <p>Nenhuma transação disponível</p>
             </div>
           ) : (
             filteredMonthKeys.map((monthKey) => {
               const monthTransactions = groupedTransactions[monthKey] || []
               const isExpanded = expandedMonths[monthKey] ?? false
+              
+              const isDisabled = monthTransactions.length === 0
+
+              const [monthValue, yearValue] = monthKey.split("-")
+              const monthObj = months.find(m => m.value === monthValue)
+              const monthLabel = monthObj ? monthObj.labelPt : monthValue
 
               return (
                 <div key={monthKey}>
                   <button
-                    onClick={() => toggleExpanded(monthKey)}
-                    className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded"
+                    onClick={() => !isDisabled && toggleExpanded(monthKey)}
+                    className={`flex items-center justify-between w-full p-2 rounded
+                      ${isDisabled ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-50 cursor-pointer"}
+                    `}
                     aria-expanded={isExpanded}
+                    disabled={isDisabled}
                   >
                     <span className="font-medium text-gray-900">
-                      {monthKey}
-                      {monthTransactions.length === 0 && (
-                        <span className="text-sm text-gray-400 font-normal ml-2">
-                          (No transactions)
-                        </span>
+                      {monthLabel} {yearValue}
+                      {isDisabled && (
+                        <span className="text-sm text-gray-400 font-normal ml-2">(Sem transações)</span>
                       )}
                     </span>
-                    <ChevronUp
-                      size={20}
-                      className={`text-gray-400 transition-transform ${isExpanded ? "rotate-0" : "rotate-180"}`}
-                      aria-hidden="true"
-                    />
+                    {!isDisabled && (
+                      <ChevronUp
+                        size={20}
+                        className={`text-gray-400 transition-transform ${isExpanded ? "rotate-0" : "rotate-180"}`}
+                        aria-hidden="true"
+                      />
+                    )}
                   </button>
 
                   {isExpanded && (
                     <div className="mt-2">
-                      {monthTransactions.length > 0 ? (
-                        <TransactionTable transactions={monthTransactions} month={monthKey} />
-                      ) : (
-                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-                          <p>No transactions for this period</p>
-                        </div>
-                      )}
+                      <TransactionTable transactions={monthTransactions} month={`${monthLabel} ${yearValue}`} />
                     </div>
                   )}
                 </div>
