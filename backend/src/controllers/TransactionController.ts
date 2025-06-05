@@ -1,0 +1,72 @@
+import type { Request, Response } from "express"
+import { TransactionService } from "../services/TransactionService"
+import { TransactionType } from "../entities/transaction"
+
+export class TransactionController {
+  private transactionService: TransactionService
+
+  constructor() {
+    this.transactionService = new TransactionService()
+  }
+
+  async create(req: Request, res: Response) {
+    try {
+      const { date, description, value, type } = req.body
+
+      const newTransaction = await this.transactionService.create({
+        date,
+        description,
+        value: parseFloat(value),
+        type: type as TransactionType,
+      })
+
+      res.status(201).json({
+        message: "Transaction created successfully",
+        data: newTransaction,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Validation failed")) {
+        return res.status(400).json({
+          message: "Invalid data",
+          error: error.message,
+        })
+      }
+
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      })
+    }
+  }
+
+  async listAll(req: Request, res: Response) {
+    try {
+      const transactions = await this.transactionService.findAll()
+      res.json({
+        message: "Transactions listed successfully",
+        data: transactions,
+        total: transactions.length,
+      })
+    } catch (error) {
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      })
+    }
+  }
+
+  async listMonthlyTotals(req: Request, res: Response) {
+    try {
+      const result = await this.transactionService.getMonthlyTotals()
+      res.json({
+        message: "Monthly totals listed successfully",
+        data: result,
+      })
+    } catch (error) {
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      })
+    }
+  }
+}
