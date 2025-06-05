@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { api } from "@/lib/axios";
 
 interface Transaction {
   id: string;
-  date: string;
+  date: string; 
   description: string;
   value: number;
   type: "Credit" | "Debit";
@@ -16,7 +17,7 @@ interface Totals {
 
 interface TransactionTableProps {
   transactions: Transaction[];
-  month: string;
+  month: string; 
 }
 
 const monthMap: Record<string, number> = {
@@ -35,8 +36,8 @@ const monthMap: Record<string, number> = {
 };
 
 function getMonthNumberFromString(monthYear: string): number | undefined {
-  const monthName = monthYear.split(" ")[0];
-  return monthMap[monthName];
+  const monthName = monthYear.split(" ")[0]; 
+  return monthMap[monthName]; 
 }
 
 export function TransactionTable({ transactions, month }: TransactionTableProps) {
@@ -48,10 +49,9 @@ export function TransactionTable({ transactions, month }: TransactionTableProps)
     async function fetchTotals() {
       setLoading(true);
       setError(null);
+
       try {
-        const response = await fetch(`https://contai.onrender.com/transaction/monthly/totals`);
-        if (!response.ok) throw new Error("Error fetching totals");
-        const json = await response.json();
+        const response = await api.get("transaction/monthly/totals");
 
         interface MonthTotals {
           month: number;
@@ -70,7 +70,9 @@ export function TransactionTable({ transactions, month }: TransactionTableProps)
           return;
         }
 
-        const monthTotals = json.data.find((item: MonthTotals) => item.month === monthNumber);
+        const monthTotals = response.data.data.find(
+          (item: MonthTotals) => item.month === monthNumber
+        );
 
         if (monthTotals) {
           setTotals({
