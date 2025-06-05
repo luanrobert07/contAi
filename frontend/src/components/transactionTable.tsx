@@ -49,7 +49,7 @@ export function TransactionTable({ transactions, month }: TransactionTableProps)
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`http://localhost:3000/transaction/monthly/totals`);
+        const response = await fetch(`https://contai.onrender.com/transaction/monthly/totals`);
         if (!response.ok) throw new Error("Error fetching totals");
         const json = await response.json();
 

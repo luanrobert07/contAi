@@ -24,12 +24,12 @@ The system includes features to capture and store transaction data in a database
 
 ## ⚙️ Features
 
-- [ ] Register financial transactions
+- [x] Register financial transactions
 - [ ] Validate all required fields
-- [ ] View entries in a table grouped by month and year
-- [ ] Display monthly totals of credits and debits
-- [ ] Database containerized via Docker
-- [ ] Frontend deployment
+- [x] View entries in a table grouped by month and year
+- [x] Display monthly totals of credits and debits
+- [x] Database containerized via Docker
+- [x] Frontend deployment
 - [ ] Backend deployment
 - [ ] Modular, clean, and well-documented codebase
 - [ ] Complete and explanatory README
@@ -40,7 +40,7 @@ The system includes features to capture and store transaction data in a database
 
 > The interface was designed with a focus on **user experience**, simplicity, and clarity in displaying financial data.
 
-
+You can check the full design on [Figma](https://www.figma.com/design/bC3YtUpQGiN1Jh3P1PeDq5/contaAi?node-id=1-669&t=4sDoM81IHIUYuSgX-0).
 
 ---
 
