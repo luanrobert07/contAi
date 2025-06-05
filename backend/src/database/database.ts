@@ -12,6 +12,6 @@ export const myDataSource = new DataSource({
   synchronize: false,
   logging: false,
   entities: [Transaction],
-  migrations: [],
+  migrations: [__dirname + "/../migrations/*.js"],
   subscribers: [],
 });
