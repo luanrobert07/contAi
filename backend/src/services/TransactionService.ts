@@ -13,6 +13,11 @@ export class TransactionService {
     this.transactionRepository = myDataSource.getRepository(Transaction)
   }
 
+  private parseDateDDMMYYYY(dateStr: string): Date {
+    const [day, month, year] = dateStr.split("/").map(Number)
+    return new Date(year, month - 1, day)
+  }
+
   async create(data: CreateTransactionDTO): Promise<Transaction> {
     const dto = Object.assign(new CreateTransactionDTO(), data)
 
@@ -26,7 +31,7 @@ export class TransactionService {
     }
 
     const transaction = this.transactionRepository.create({
-      date: dto.date,
+      date: this.parseDateDDMMYYYY(dto.date),
       description: dto.description,
       value: dto.value,
       type: dto.type,
@@ -41,41 +46,50 @@ export class TransactionService {
     })
   }
 
-  async findByMonthAndYear(
-    year: number,
-    month: number
-  ): Promise<{
-    transactions: Transaction[]
-    totals: {
+  async getMonthlyTotals(): Promise<
+    {
+      month: number
+      year: number
       credits: number
       debits: number
       balance: number
+    }[]
+  > {
+    const transactions = await this.transactionRepository.find({
+      order: { date: "ASC" },
+    })
+
+    const grouped = new Map<string, Transaction[]>()
+
+    for (const transaction of transactions) {
+      const date = dayjs(transaction.date)
+      const key = `${date.year()}-${String(date.month() + 1).padStart(2, "0")}` // ex: 2025-03
+
+      if (!grouped.has(key)) {
+        grouped.set(key, [])
+      }
+
+      grouped.get(key)!.push(transaction)
     }
-    period: {
-      year: number
-      month: number
-    }
-  }> {
-  const startDate = dayjs(`${year}-${month}-01`).startOf("month").toDate()
-  const endDate = dayjs(startDate).endOf("month").toDate()
 
-  const transactions = await this.transactionRepository.find({
-    where: {
-      date: Between(startDate, endDate),
-    },
-    order: {
-      date: "ASC",
-    },
-  })
+    const results = Array.from(grouped.entries()).map(([key, txs]) => {
+      const [yearStr, monthStr] = key.split("-")
+      const year = parseInt(yearStr)
+      const month = parseInt(monthStr)
 
-  const totals = this.calculateTotals(transactions)
+      const totals = this.calculateTotals(txs)
 
-  return {
-    transactions,
-    totals,
-    period: { year, month },
+      return {
+        year,
+        month,
+        credits: totals.credits,
+        debits: totals.debits,
+        balance: totals.balance,
+      }
+    })
+
+    return results
   }
-}
 
   private calculateTotals(transactions: Transaction[]) {
     const totalCredits = transactions

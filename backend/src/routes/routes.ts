@@ -16,8 +16,8 @@ router.get("/", asyncHandler((req, res) =>
   transactionController.listAll(req, res)
 ))
 
-router.get("/:year/:month", asyncHandler((req, res) => 
-  transactionController.listByMonth(req, res)
+router.get("/monthly/totals", asyncHandler((req, res) =>
+  transactionController.listMonthlyTotals(req, res)
 ))
 
 export { router as transactionRoutes }

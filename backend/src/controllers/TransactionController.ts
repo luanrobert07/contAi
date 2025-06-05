@@ -55,22 +55,11 @@ export class TransactionController {
     }
   }
 
-  async listByMonth(req: Request, res: Response) {
+  async listMonthlyTotals(req: Request, res: Response) {
     try {
-      const { year, month } = req.params
-      const yearNum = parseInt(year)
-      const monthNum = parseInt(month)
-
-      const isValid = await this.transactionService.isValidPeriod(yearNum, monthNum)
-      if (!isValid) {
-        return res.status(400).json({
-          message: "Invalid period. Year must be between 1900-2100 and month between 1-12",
-        })
-      }
-
-      const result = await this.transactionService.findByMonthAndYear(yearNum, monthNum)
+      const result = await this.transactionService.getMonthlyTotals()
       res.json({
-        message: "Transactions for the period listed successfully",
+        message: "Monthly totals listed successfully",
         data: result,
       })
     } catch (error) {
