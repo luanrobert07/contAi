@@ -71,6 +71,7 @@ export function TransactionForm() {
                 selected={field.value}
                 onChange={field.onChange}
                 dateFormat="dd/MM/yyyy"
+                maxDate={new Date()}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2
                   ${errors.date ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`}
               />
@@ -79,7 +80,6 @@ export function TransactionForm() {
           {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
         </div>
 
-        {/* Descrição */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
@@ -96,7 +96,6 @@ export function TransactionForm() {
           )}
         </div>
 
-        {/* Valor */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
@@ -114,7 +113,6 @@ export function TransactionForm() {
           {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>}
         </div>
 
-        {/* Tipo */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
