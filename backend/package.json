@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --inspect --transpile-only --ignore-watch node_modules src/server.ts",
     "build": "tsc",
+    "start": "node dist/server.js",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:run": "ts-node -r dotenv/config ./node_modules/typeorm/cli.js migration:run -d src/app-data-source.ts",
     "migration:create": "npm run typeorm -- migration:create -n"
