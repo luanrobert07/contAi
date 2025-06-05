@@ -1,10 +1,9 @@
-import { Between, Repository } from "typeorm"
-import { validate } from "class-validator"
+import { Repository } from "typeorm"
 import { Transaction } from "../entities/transaction"
 import { TransactionType } from "../entities/transaction"
 import { myDataSource } from "../database/database"
-import { CreateTransactionDTO } from "../dto/transactionDTO"
 import dayjs from "dayjs"
+import type { CreateTransactionInput } from "../dto/transactionDTO"
 
 export class TransactionService {
   private transactionRepository: Repository<Transaction>
@@ -18,23 +17,12 @@ export class TransactionService {
     return new Date(year, month - 1, day)
   }
 
-  async create(data: CreateTransactionDTO): Promise<Transaction> {
-    const dto = Object.assign(new CreateTransactionDTO(), data)
-
-    const errors = await validate(dto)
-    if (errors.length > 0) {
-      const messages = errors.map((error) => ({
-        field: error.property,
-        messages: Object.values(error.constraints || {}),
-      }))
-      throw new Error(`Validation failed: ${JSON.stringify(messages)}`)
-    }
-
+  async create(data: CreateTransactionInput): Promise<Transaction> {
     const transaction = this.transactionRepository.create({
-      date: this.parseDateDDMMYYYY(dto.date),
-      description: dto.description,
-      value: dto.value,
-      type: dto.type,
+      date: this.parseDateDDMMYYYY(data.date),
+      description: data.description,
+      value: data.value,
+      type: data.type,
     })
 
     return await this.transactionRepository.save(transaction)
@@ -63,7 +51,7 @@ export class TransactionService {
 
     for (const transaction of transactions) {
       const date = dayjs(transaction.date)
-      const key = `${date.year()}-${String(date.month() + 1).padStart(2, "0")}` // ex: 2025-03
+      const key = `${date.year()}-${String(date.month() + 1).padStart(2, "0")}`
 
       if (!grouped.has(key)) {
         grouped.set(key, [])
@@ -105,9 +93,5 @@ export class TransactionService {
       debits: totalDebits,
       balance: totalCredits - totalDebits,
     }
-  }
-
-  async isValidPeriod(year: number, month: number): Promise<boolean> {
-    return year >= 1900 && year <= 2100 && month >= 1 && month <= 12
   }
 }
