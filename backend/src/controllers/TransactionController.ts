@@ -1,6 +1,8 @@
 import type { Request, Response } from "express"
 import { TransactionService } from "../services/TransactionService"
 import { TransactionType } from "../entities/transaction"
+import z from "zod"
+import { createTransactionSchema } from "../dto/transactionDTO"
 
 export class TransactionController {
   private transactionService: TransactionService
@@ -11,27 +13,22 @@ export class TransactionController {
 
   async create(req: Request, res: Response) {
     try {
-      const { date, description, value, type } = req.body
-
-      const newTransaction = await this.transactionService.create({
-        date,
-        description,
-        value: parseFloat(value),
-        type: type as TransactionType,
-      })
-
+      const parsedData = createTransactionSchema.parse(req.body)
+  
+      const newTransaction = await this.transactionService.create(parsedData)
+  
       res.status(201).json({
         message: "Transaction created successfully",
         data: newTransaction,
       })
     } catch (error) {
-      if (error instanceof Error && error.message.includes("Validation failed")) {
+      if (error instanceof z.ZodError) {
         return res.status(400).json({
-          message: "Invalid data",
-          error: error.message,
+          message: "Validation failed",
+          errors: error.errors,
         })
       }
-
+  
       res.status(500).json({
         message: "Internal server error",
         error: error instanceof Error ? error.message : "Unknown error",
