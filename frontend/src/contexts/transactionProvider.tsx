@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/axios";
-import { TransactionContext } from "./transactionsCOntext";
+import { TransactionContext } from "./transactionContext";
 
 interface Transaction {
   id: string;
