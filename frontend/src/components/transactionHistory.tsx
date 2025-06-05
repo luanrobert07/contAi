@@ -3,7 +3,7 @@
 import { useContext, useState, useMemo } from "react"
 import { TransactionTable } from "./transactionTable"
 import { ChevronUp, Filter } from 'lucide-react'
-import { TransactionContext } from "@/contexts/transactionsCOntext" 
+import { TransactionContext } from "@/contexts/transactionContext"
 
 interface Transaction {
   id: string

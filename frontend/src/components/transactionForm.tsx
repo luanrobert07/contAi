@@ -5,7 +5,7 @@ import DatePicker from "react-datepicker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus } from "lucide-react"
 import "react-datepicker/dist/react-datepicker.css"
-import { TransactionContext } from "@/contexts/transactionsCOntext"
+import { TransactionContext } from "@/contexts/transactionContext"
 
 export function TransactionForm() {
   const { createTransaction } = useContext(TransactionContext)
