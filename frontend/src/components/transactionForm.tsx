@@ -56,7 +56,6 @@ export function TransactionForm() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-        {/* Data */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-blue-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>

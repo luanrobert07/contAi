@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/axios";
 import { TransactionContext } from "./transactionContext";
-import { formatDateToDDMMYYYY } from "@/utils/date";  // <-- aqui a importação
+import { formatDateToDDMMYYYY } from "@/utils/date";  
 
 interface Transaction {
   id: string;
