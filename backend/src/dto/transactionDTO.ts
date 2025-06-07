@@ -10,6 +10,5 @@ export const createTransactionSchema = z.object({
   type: z.enum([TransactionType.CREDIT, TransactionType.DEBIT]),
 })
 
-// Para tipar os dados validados
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>
 
