@@ -26,13 +26,13 @@ Features include data validation, database persistence, and monthly summaries fo
 ## ⚙️ Features
 
 - [x] Financial transaction registration
-- [ ] Comprehensive field validations
+- [x] Comprehensive field validations
 - [x] Transaction table grouped by month/year
 - [x] Monthly credit/debit totals
 - [x] Dockerized PostgreSQL database
 - [x] Frontend deployment (Vercel)
 - [x] Backend deployment (Render)
-- [ ] Modular, clean, documented code
+- [x] Modular, clean, documented code
 - [x] Complete README
 
 ---
