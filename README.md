@@ -20,6 +20,7 @@ Features include data validation, database persistence, and monthly summaries fo
 - **Database:** PostgreSQL with Docker
 - **Deployment:** Vercel (Frontend) + Render (Backend)
 - **Design:** Figma
+- **Documentation:** Swagger
 
 ---
 
@@ -59,6 +60,14 @@ View the complete design on [Figma](https://www.figma.com/design/bC3YtUpQGiN1Jh3
 
 ---
 
+## 📚 Documentação da API
+
+A documentação está disponível via Swagger.  
+➡️ [Acesse aqui o Swagger UI](http://localhost:3000/api-docs)
+
+> Certifique-se de que o servidor está rodando antes de acessar.
+
+
 ## 🚀 Local Installation
 
 ### 1. Clone repository
@@ -79,7 +88,7 @@ npm run typeorm migration:run
 npm run dev
 ```
 
-### 2. Install deppendency frontend
+### 4. Install deppendency frontend
 ```bash
 cd ../frontend
 npm install
