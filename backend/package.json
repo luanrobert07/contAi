@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "test": "vitest",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "migration:run": "ts-node -r dotenv/config ./node_modules/typeorm/cli.js migration:run -d src/database/database.ts",
+    "migration:run": "npm run typeorm -- migration:run --dataSource ./src/database/database.ts",
     "migration:create": "npm run typeorm -- migration:create -n"
   },
   "keywords": [],
