@@ -75,7 +75,7 @@ npm install
 ### 3. Start Database, run migrations and start backend server
 ```bash
 docker-compose up -d
-npm run typeorm migration:run
+npm run migration:run
 npm run dev
 ```
 
